@@ -46,6 +46,10 @@ CUDA_VISIBLE_DEVICES=4,5,6,7 DDP_NGPUS=4 ./train_JetClass.sh ParT full --network
 CUDA_VISIBLE_DEVICES=4,5,6,7 DDP_NGPUS=4 ./train_JetClass.sh ParT full --network-config networks/example_ParticleTransformer_kan_hybrid.py
 ```
 
+```bash
+python get_datasets.py JetClass
+```
+
 ## 实验方案
 
 | 版本 | 改动范围 | 配置文件 |
