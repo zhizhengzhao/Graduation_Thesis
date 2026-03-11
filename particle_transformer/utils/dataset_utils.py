@@ -13,8 +13,33 @@ import requests
 from tqdm import tqdm
 
 
-def _download(url, fname, chunk_size=1024):
-    '''https://gist.github.com/yanqd0/c13ed29e29432e3cf3e7c38467f42f51'''
+def _has_aria2c():
+    return shutil.which('aria2c') is not None
+
+
+def _download_aria2c(url, fname, max_connections=16):
+    '''Use aria2c for multi-connection download with resume support.'''
+    import subprocess
+    dir_name = os.path.dirname(fname) or '.'
+    base_name = os.path.basename(fname)
+    cmd = [
+        'aria2c',
+        '-x', str(max_connections),
+        '-s', str(max_connections),
+        '-c',
+        '-d', dir_name,
+        '-o', base_name,
+        '--file-allocation=none',
+        url,
+    ]
+    print(f'Using aria2c with {max_connections} connections')
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        raise RuntimeError(f'aria2c exited with code {result.returncode}')
+
+
+def _download_requests(url, fname, chunk_size=1024 * 1024):
+    '''Fallback download with requests (1 MiB chunks, resume support).'''
     headers = {}
     initial_size = 0
     mode = 'wb'
@@ -49,6 +74,13 @@ def _download(url, fname, chunk_size=1024):
         for data in resp.iter_content(chunk_size=chunk_size):
             size = file.write(data)
             bar.update(size)
+
+
+def _download(url, fname, chunk_size=1024 * 1024):
+    if _has_aria2c():
+        _download_aria2c(url, fname)
+    else:
+        _download_requests(url, fname, chunk_size=chunk_size)
 
 
 def extract_archive(file_path, path='.', archive_format='auto'):
